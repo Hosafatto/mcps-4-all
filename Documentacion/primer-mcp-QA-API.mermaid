@@ -1,0 +1,23 @@
+flowchart LR
+    A["MCP Client"]
+
+    A -->|"Tool call"| B["MCPS 4 All<br/>QA/API Server"]
+
+    B --> C["Tool Registry"]
+
+    C --> D["health_check"]
+    C --> E["api_request"]
+    C --> F["validate_status_code"]
+    C --> G["validate_json_property"]
+
+    E --> H["HTTP Service"]
+    F --> I["Validation Service"]
+    G --> I
+
+    H --> J["REST API"]
+
+    J --> H
+    H --> B
+    I --> B
+
+    B -->|"Structured MCP response"| A
