@@ -1,8 +1,14 @@
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createServer } from './server.js';
 
-const port = Number(process.env.PORT ?? 3000);
-const server = createServer();
+async function main(): Promise<void> {
+  const server = createServer();
+  const transport = new StdioServerTransport();
 
-server.listen(port, () => {
-  console.log(`MCP server listening on port ${port}`);
+  await server.connect(transport);
+}
+
+main().catch((error: unknown) => {
+  console.error('Failed to start MCP server:', error);
+  process.exitCode = 1;
 });

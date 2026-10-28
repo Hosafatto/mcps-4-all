@@ -287,10 +287,10 @@ flowchart LR
 
     B --> C["Tool Registry"]
 
-    C --> D["health_check"]
-    C --> E["api_request"]
-    C --> F["validate_status_code"]
-    C --> G["validate_json_property"]
+    C --> D["health_check<br/>implemented"]
+    C --> E["api_request<br/>planned"]
+    C --> F["validate_status_code<br/>planned"]
+    C --> G["validate_json_property<br/>planned"]
 
     E --> H["HTTP Service"]
     F --> I["Validation Service"]
@@ -349,10 +349,15 @@ The first version must be deliberately small.
 Purpose: confirm that the MCP server is running and capable of
 responding.
 
+Status: implemented in the stdio server and successfully discovered and
+executed through MCP Inspector.
+
 #### `api_request`
 
 Purpose: execute a controlled HTTP request and return structured
 information useful for testing.
+
+Status: planned.
 
 The exact supported methods, headers, body handling, security
 restrictions, timeouts, and response limits must be designed during
@@ -363,9 +368,13 @@ implementation rather than assumed prematurely.
 Purpose: compare an actual HTTP status code against an expected value
 and return a structured validation result.
 
+Status: planned.
+
 #### `validate_json_property`
 
 Purpose: validate an expected property/value in JSON data.
+
+Status: planned.
 
 The first implementation should remain intentionally simple. More
 sophisticated JSON-path, schema, contract, and multi-assertion behavior
@@ -797,7 +806,8 @@ The repository itself should provide evidence behind that statement.
 
 ## 17. Current Project State
 
-**Current phase:** planning / repository initialization.
+**Current phase:** first working MCP server; v0.1.0 implementation is
+in progress.
 
 ### Decisions already made
 
@@ -807,15 +817,19 @@ The repository itself should provide evidence behind that statement.
 -   Language: TypeScript.
 -   Runtime: Node.js.
 -   Initial domain: QA/API.
--   Initial transport: stdio.
+-   Initial transport: stdio, implemented with the MCP TypeScript SDK's
+    `StdioServerTransport`.
 -   Initial testing framework: Vitest.
 -   Initial API client approach: native Fetch API.
 -   Planned CI/CD: GitHub Actions.
--   Initial four tools:
-    -   `health_check`
-    -   `api_request`
-    -   `validate_status_code`
-    -   `validate_json_property`
+-   Initial tools:
+    -   `health_check` is implemented and successfully discovered and
+        executed through MCP Inspector.
+    -   `api_request`, `validate_status_code`, and
+        `validate_json_property` are planned for v0.1.0 and are not yet
+        implemented.
+-   The current implementation builds successfully, its unit tests pass,
+    and ESLint passes.
 -   Project should remain simple until real complexity justifies
     restructuring.
 -   The repository should be honest about what is implemented versus
@@ -824,9 +838,8 @@ The repository itself should provide evidence behind that statement.
 
 ### Immediate next milestone
 
-Create the repository foundation and implement the smallest possible
-working MCP server, then connect it to a real MCP client before
-expanding the toolset.
+Implement the remaining planned v0.1.0 tools and verify them with tests
+and a real MCP client before expanding the toolset.
 
 ------------------------------------------------------------------------
 
