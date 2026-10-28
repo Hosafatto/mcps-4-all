@@ -1,6 +1,9 @@
-import type { ServerStatus } from '../../server.js';
+export interface HealthStatus {
+  status: 'ok';
+  timestamp: string;
+}
 
-export function checkHealth(): ServerStatus {
+export function checkHealth(): HealthStatus {
   return {
     status: 'ok',
     timestamp: new Date().toISOString(),
