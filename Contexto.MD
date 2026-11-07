@@ -1,867 +1,207 @@
-# MCPS 4 All --- Project Context
+
+# MCPS 4 All — Project Context
 
 > **Learn it. Build it. Break it. Improve it. Share it.**
 
-This document is the persistent working context for **MCPS 4 All**. Its
-purpose is to preserve the project's intent, architecture, decisions,
-rules, roadmap, and learning objectives so development can be resumed
-without reconstructing previous discussions.
+This is the persistent engineering context for **MCPS 4 All**. Unlike the public-facing `README.md`, this file records project intent, architectural choices, constraints, learning objectives, current implementation state, and future direction. Keep it updated for material changes; **do not turn it into a commit log**.
 
-Unlike `README.md`, this file is primarily an **internal project
-reference**. It may contain plans, decisions, working assumptions,
-future ideas, and development philosophy that do not need to appear on
-the public-facing project page.
+---
 
-------------------------------------------------------------------------
+## 1. Identity and purpose
 
-## 1. Project Identity
+- **Project:** MCPS 4 All
+- **Repository:** `Hosafatto/mcps-4-all`
+- **Public description:** An open-source collection of practical Model Context Protocol (MCP) servers built for learning, experimentation, automation, and real-world use.
+- **Tagline:** Learn it. Build it. Break it. Improve it. Share it.
+- **License:** MIT.
 
-**Project name:** MCPS 4 All\
-**Repository name:** `mcps-4-all`
+The long-term goal is a collection of **focused MCP servers**, not one enormous server. Start with QA/API because it is a familiar domain in which to learn the protocol, client/server interactions, schemas, error handling, and testing. Later servers may cover Playwright, databases, and other useful integrations.
 
-### Public description
+The project should demonstrate genuine engineering understanding, not merely provide a résumé keyword or a collection of AI-generated snippets. The developer should be able to explain, debug, test, and extend every important component.
 
-> An open-source collection of practical Model Context Protocol (MCP)
-> servers built for learning, experimentation, automation, and
-> real-world use.
+## 2. Learning objectives
 
-### Tagline
+Understand and demonstrate:
 
-> **Learn it. Build it. Break it. Improve it. Share it.**
+1. What MCP solves and how clients communicate with servers.
+2. Server initialization, tool discovery (`tools/list`), and execution (`tools/call`).
+3. Transport choices, currently stdio.
+4. Tool contracts: names, descriptions, input validation, outputs, and errors.
+5. Separation of MCP registration from application services.
+6. Testing at unit, MCP protocol integration, and real-client levels.
+7. Security tradeoffs when tools interact with external systems.
+8. How to build and maintain another server independently.
 
-### Core idea
+Preferred loop: **choose a small capability → understand → design → implement → run → break/test → review → document → commit**.
 
-MCPS 4 All is not intended to be one enormous MCP server.
+## 3. Current technology stack
 
-It is a learning and engineering project where focused MCP servers are
-designed, implemented, broken, tested, improved, documented, and
-eventually made reusable by other people.
+| Area | Current decision |
+| --- | --- |
+| Language | TypeScript, strict mode; avoid `any` as a shortcut |
+| Runtime | Node.js; Node 22 in CI |
+| MCP | Official TypeScript SDK, v1 dependency range |
+| Transport | `StdioServerTransport` |
+| Tool registration | `McpServer.registerTool()`; prefer over deprecated `tool()` |
+| Validation | Zod v3 dependency range |
+| HTTP | Native `fetch`, `AbortSignal.timeout()` |
+| Tests | Vitest, MCP SDK `Client` + `InMemoryTransport` |
+| Quality | ESLint, Prettier, TypeScript compiler |
+| CI | GitHub Actions workflow configured |
+| Distribution | GitHub source; npm/Docker only if justified later |
 
-The project begins with QA/API tooling because that domain allows us to
-focus on learning MCP while working with familiar testing concepts.
+Playwright, PostgreSQL, SQL Server, Docker, and npm distribution remain **planned**, not implemented.
 
-Over time, the repository may contain multiple MCP servers for different
-purposes.
+## 4. Current architecture
 
-------------------------------------------------------------------------
+The repository currently contains **one QA/API MCP server**, not a monorepo. Avoid introducing `servers/` and shared-package abstractions until multiple independent servers justify them.
 
-## 2. Real Objective
-
-The objective is **not** simply to add "MCP" to a résumé.
-
-The objective is to reach the point where the developer can confidently
-explain and demonstrate:
-
--   What MCP is.
--   What problem an MCP server solves.
--   How an MCP client communicates with a server.
--   How tools are registered and discovered.
--   How tool input and output schemas work.
--   How validation is handled.
--   How errors are represented and propagated.
--   How transports work.
--   How MCP-specific code is separated from application logic.
--   How MCP tools are tested.
--   How a server is debugged.
--   How external systems are integrated safely.
--   How architectural decisions were made.
--   How to design another MCP server without depending on a tutorial.
-
-The intended progression is:
-
-``` mermaid
-flowchart LR
-    A["I followed<br/>an MCP tutorial"]
-    B["I built<br/>an MCP"]
-    C["I understand<br/>how it works"]
-    D["I can design<br/>MCP tools"]
-    E["I can test &<br/>debug them"]
-    F["I can explain<br/>the architecture"]
-    G["I can build<br/>another one"]
-
-    A --> B --> C --> D --> E --> F --> G
-```
-
-The project becomes meaningful portfolio experience when the final
-stages are reached---not merely when code exists in GitHub.
-
-------------------------------------------------------------------------
-
-## 3. Development Philosophy
-
-MCPS 4 All serves four purposes.
-
-### 3.1 Learning
-
-Understand MCP rather than blindly copying SDK examples.
-
-Conceptually:
-
-``` text
-Client
-  ↓
-Protocol
-  ↓
-Server
-  ↓
-Tool / Resource / Prompt
-  ↓
-External system
-  ↓
-Structured response
-  ↓
-Client
-```
-
-Every important part should eventually be explainable in plain language.
-
-### 3.2 Experimentation
-
-Small experiments are encouraged.
-
-Some experiments will become permanent features.
-
-Others may exist only to answer questions such as:
-
--   Does this design make sense?
--   Is this abstraction useful?
--   What happens when the tool fails?
--   How should the schema be structured?
--   Is MCP actually the right interface for this operation?
-
-Failed experiments are useful if the reason for failure is understood.
-
-### 3.3 Real-world tooling
-
-Useful experiments should progressively become reliable tools:
-
-``` text
-experiment
-    ↓
-working prototype
-    ↓
-tests
-    ↓
-error handling
-    ↓
-documentation
-    ↓
-CI
-    ↓
-reusable MCP
-```
-
-### 3.4 Portfolio
-
-The repository should eventually be something another engineer or
-recruiter can inspect and run.
-
-A user should ultimately be able to do something conceptually similar
-to:
-
-``` bash
-git clone <repository>
-cd mcps-4-all
-npm install
-npm test
-npm run build
-```
-
-The repository should demonstrate actual engineering decisions rather
-than only contain generated sample code.
-
-------------------------------------------------------------------------
-
-## 4. Main Stack
-
-The guiding principle is to keep the surrounding technology familiar so
-the primary learning challenge is MCP itself.
-
-  -----------------------------------------------------------------------
-  Area                    Technology              Reason
-  ----------------------- ----------------------- -----------------------
-  Language                TypeScript              Familiar language and
-                                                  strong typing
-
-  Runtime                 Node.js                 Natural TypeScript
-                                                  ecosystem
-
-  MCP                     Official Model Context  Direct implementation
-                          Protocol TypeScript SDK of MCP
-
-  Schema validation       Zod                     Explicit runtime
-                                                  schemas with TypeScript
-                                                  integration
-
-  Package manager         npm                     Simple and widely
-                                                  supported
-
-  Unit testing            Vitest                  Lightweight
-                                                  TypeScript-friendly
-                                                  testing
-
-  HTTP                    Native Fetch API        Avoid unnecessary
-                                                  dependencies initially
-
-  E2E / Browser           Playwright              Planned integration and
-  automation                                      existing expertise
-
-  Databases               PostgreSQL / SQL Server Planned data-validation
-                                                  integrations
-
-  Configuration           Environment variables / Configuration and
-                          `.env`                  secrets
-
-  Linting                 ESLint                  Static quality controls
-
-  Formatting              Prettier                Consistent formatting
-
-  CI/CD                   GitHub Actions          Automated build, lint,
-                                                  and tests
-
-  Containers              Docker                  Planned when
-                                                  distribution benefits
-                                                  from it
-
-  Distribution            GitHub → potentially    Source first,
-                          npm                     simplified installation
-                                                  later
-  -----------------------------------------------------------------------
-
-### Stack rule
-
-Do not add technology for résumé keywords or README decoration.
-
-If Docker, PostgreSQL, Playwright, a cloud platform, or any other
-technology appears as part of the implemented stack, the repository must
-actually use it.
-
-------------------------------------------------------------------------
-
-## 5. High-Level Architecture
-
-The long-term concept is a collection of focused servers.
-
-``` mermaid
+```mermaid
 flowchart TD
-    A["MCP Clients / AI Agents"]
-
-    A --> B["MCPS 4 All"]
-
-    B --> C["QA / API MCP"]
-    B --> D["Database MCP"]
-    B --> E["Playwright MCP"]
-    B --> F["Future MCPs"]
-
-    C --> G["REST APIs"]
-    D --> H["PostgreSQL"]
-    D --> I["SQL Server"]
-    E --> J["Web Applications"]
-
-    F --> K["Whatever useful stuff we build next"]
+    A["MCP Client / Inspector"] <-->|"stdio"| B["McpServer"]
+    B --> C["Tool Registration"]
+    C --> D["health_check"]
+    C --> E["api_request"]
+    D --> F["Health Logic"]
+    E --> G["HTTP Service"]
+    G --> H["Allowed REST Endpoint"]
 ```
 
-The exact repository structure does not need to reflect this
-architecture immediately.
+- `src/index.ts`: creates the server and connects stdio transport; startup failures go to stderr.
+- `src/server.ts`: registers MCP tools and translates application results/errors to MCP responses.
+- `src/tools/health/`: pure health-check logic.
+- `src/tools/api/`: validates the allowed HTTP destination and invokes the HTTP service.
+- `src/services/http/`: executes GET via native `fetch`, applies timeout, rejects redirects, parses JSON when possible, and preserves text otherwise.
+- `src/schemas/api-request.ts`: Zod input contract for `api_request`.
+- `tests/`: unit and in-memory MCP integration tests.
 
-We should **not build a monorepo architecture before multiple servers
-actually exist**.
+Keep protocol-specific registration thin; business logic should be independently testable. Do not create premature abstractions.
 
-------------------------------------------------------------------------
+## 5. Implemented MCP tools
 
-## 6. First Implementation: QA / API MCP
+### `health_check` — implemented
 
-The first server focuses on API testing and validation.
+- No input parameters.
+- Returns a text content item with JSON `{ "status": "ok", "timestamp": "<ISO-8601 UTC>" }`.
+- Confirms basic server responsiveness, not the health of external infrastructure.
+- Successfully discovered and executed from MCP Inspector.
+- Covered by unit and MCP protocol integration tests.
 
-This domain was selected because it is familiar enough that development
-effort can focus on MCP fundamentals rather than simultaneously learning
-a new business domain.
+### `api_request` — implemented, deliberately restricted
 
-### Initial architecture
+- Method: **GET only**.
+- Inputs: `url` (valid HTTPS URL) and optional `timeoutMs` (integer 1000–10000, default 5000).
+- Allowed destination: exactly `jsonplaceholder.typicode.com` over default HTTPS port; no automatic redirects.
+- Returns MCP text content containing JSON with `status`, `ok`, `url`, and `body`.
+- JSON response bodies are parsed; other bodies remain text.
+- HTTP 4xx/5xx statuses return structured results with `ok: false` rather than automatically throwing.
+- Invalid arguments are rejected by Zod at the MCP boundary; blocked destinations and request execution failures are represented as MCP tool errors.
+- Verified manually with MCP Inspector using successful GET, HTTP 404, disallowed hostname, and invalid timeout inputs.
+- Covered by unit tests and MCP protocol integration tests.
 
-``` mermaid
-flowchart LR
-    A["MCP Client"]
+**Not supported yet:** POST/PUT/PATCH/DELETE, custom headers, authentication, request bodies, arbitrary hosts, streaming, response-size caps, or generalized URL policies. Do not describe the tool as a production-safe general HTTP proxy.
 
-    A -->|"Tool call"| B["MCPS 4 All<br/>QA/API Server"]
+## 6. Verification and testing
 
-    B --> C["Tool Registry"]
+Latest user-confirmed local results:
 
-    C --> D["health_check<br/>implemented"]
-    C --> E["api_request<br/>planned"]
-    C --> F["validate_status_code<br/>planned"]
-    C --> G["validate_json_property<br/>planned"]
+- **12/12 Vitest tests passed**, across 3 files.
+- `npm run lint` passed.
+- `npm run build` passed.
+- Both tools were discovered in MCP Inspector using stdio.
+- `api_request` successfully retrieved data from the public JSONPlaceholder API.
 
-    E --> H["HTTP Service"]
-    F --> I["Validation Service"]
-    G --> I
+Test distribution:
 
-    H --> J["REST API"]
+| File | Tests | Purpose |
+| --- | ---: | --- |
+| `tests/server.test.ts` | 1 | Health-check logic |
+| `tests/api-request.test.ts` | 6 | HTTP/API behavior, including abort signal |
+| `tests/mcp-integration.test.ts` | 5 | Tool discovery, execution, Zod validation, MCP errors |
 
-    J --> H
-    H --> B
-    I --> B
+`InMemoryTransport` connects an official MCP client and server inside Vitest; the external `fetch` call is mocked. Integration tests verify the MCP protocol path without network dependencies.
 
-    B -->|"Structured MCP response"| A
-```
+**Important limitations:** The timeout test uses a mocked fetch that honors the abort signal, not a real network stall. The unit test that mocks a fetch error message does not itself prove network timeout behavior. No claim of comprehensive SSRF protection or CI pass should be made without independent verification.
 
-### Intended separation
+## 7. Security decisions and risks
 
-Preferred:
+Current safeguards for `api_request`:
 
-``` text
-MCP Tool
-   ↓
-Service
-   ↓
-External System
-```
+- Zod validates the URL and timeout input.
+- The API tool restricts scheme, hostname, and port.
+- The HTTP service rejects redirects (`redirect: 'error'`).
+- Requests have a bounded timeout.
 
-Avoid:
+These are **initial demonstration constraints**, not a complete SSRF defense. Future generalized HTTP tooling must consider DNS resolution, private/reserved IP blocking, DNS rebinding, redirects, proxy behavior, response-size limits, credential exposure, and network boundaries. Avoid broad network or filesystem access for convenience.
 
-``` text
-MCP Tool
-   ↓
-Hundreds of lines of protocol + validation + business logic + HTTP code
-```
+Never commit secrets. Use `.env.example` for safe configuration examples. Keep MCP stdout clean; diagnostics belong on stderr.
 
-MCP registration should remain thin enough that services can be tested
-independently.
+## 8. v0.1 scope and remaining work
 
-------------------------------------------------------------------------
+| Capability | State |
+| --- | --- |
+| TypeScript MCP server and stdio transport | Done |
+| `health_check` | Done |
+| `api_request` restricted GET | Done |
+| Zod validation and basic error handling | Done for implemented tools |
+| Unit and MCP integration tests | Done for implemented tools |
+| Manual MCP Inspector verification | Done for implemented tools |
+| `validate_status_code` | Planned |
+| `validate_json_property` | Planned |
+| Full v0.1 documentation/review/merge | Pending completion |
 
-## 7. v0.1.0 Scope
-
-The first version must be deliberately small.
-
-### Core
-
--   TypeScript MCP server.
--   stdio transport.
--   Zod validation.
--   Basic error handling.
--   Real execution from an MCP client.
-
-### Initial tools
-
-#### `health_check`
-
-Purpose: confirm that the MCP server is running and capable of
-responding.
-
-Status: implemented in the stdio server and successfully discovered and
-executed through MCP Inspector.
-
-#### `api_request`
-
-Purpose: execute a controlled HTTP request and return structured
-information useful for testing.
-
-Status: planned.
-
-The exact supported methods, headers, body handling, security
-restrictions, timeouts, and response limits must be designed during
-implementation rather than assumed prematurely.
-
-#### `validate_status_code`
-
-Purpose: compare an actual HTTP status code against an expected value
-and return a structured validation result.
-
-Status: planned.
-
-#### `validate_json_property`
-
-Purpose: validate an expected property/value in JSON data.
-
-Status: planned.
-
-The first implementation should remain intentionally simple. More
-sophisticated JSON-path, schema, contract, and multi-assertion behavior
-belongs in later iterations.
-
-### Engineering requirements
-
--   Unit tests.
--   MCP tool tests.
--   ESLint.
--   Prettier.
--   Installation instructions.
--   Usage examples.
--   Real MCP client verification.
-
-### v0.1.0 completion rule
-
-Passing `npm test` alone is not enough.
-
-The server must be connected to and successfully exercised through a
-real MCP client.
-
-------------------------------------------------------------------------
-
-## 8. Initial Roadmap
-
-``` mermaid
-flowchart LR
-    A["v0.1<br/>MCP Fundamentals<br/>API Tools"]
-    B["v0.2<br/>API Validation"]
-    C["v0.3<br/>Playwright"]
-    D["v0.4<br/>Database"]
-    E["v0.5<br/>Test Generation"]
-    F["v0.6<br/>Reporting &<br/>Failure Analysis"]
-    G["v1.0<br/>Stable Toolkit"]
-
-    A --> B --> C --> D --> E --> F --> G
-```
-
-The version numbers are a working direction, not a contract.
-
-  Phase   Main learning target
-  ------- ------------------------------------------------
-  v0.1    MCP fundamentals
-  v0.2    Tool design and schemas
-  v0.3    MCP + browser automation
-  v0.4    MCP + external data systems
-  v0.5    AI-assisted testing
-  v0.6    Observability, reporting, and failure analysis
-  v1.0    Distribution and stability
-
-Priorities may change as actual implementation exposes better ideas.
-
-------------------------------------------------------------------------
-
-## 9. Initial Repository Structure
-
-Start simple:
-
-``` text
-mcps-4-all/
-│
-├── src/
-│   ├── index.ts
-│   ├── server.ts
-│   │
-│   ├── tools/
-│   │   ├── health/
-│   │   └── api/
-│   │
-│   ├── services/
-│   │   ├── http/
-│   │   └── validation/
-│   │
-│   ├── schemas/
-│   └── utils/
-│
-├── tests/
-│
-├── docs/
-├── examples/
-│
-├── .github/
-│   └── workflows/
-│
-├── .env.example
-├── .gitignore
-├── LICENSE
-├── README.md
-├── Contexto.MD
-├── package.json
-├── tsconfig.json
-├── eslint.config.js
-├── prettier.config.js
-└── vitest.config.ts
-```
-
-If multiple independent MCPs eventually justify it, the project may
-evolve toward:
-
-``` text
-mcps-4-all/
-│
-├── servers/
-│   ├── qa-api/
-│   ├── database/
-│   ├── playwright/
-│   └── ...
-│
-├── packages/
-│   └── shared/
-│
-├── docs/
-├── examples/
-└── ...
-```
-
-Do not create this complexity until it solves a real problem.
-
-------------------------------------------------------------------------
-
-## 10. Engineering Rules
-
-### 10.1 TypeScript strict mode
-
-Strict typing is part of the learning and quality strategy.
-
-Avoid using `any` merely to bypass compiler errors.
-
-### 10.2 Explicit tool contracts
-
-Every tool should have clearly defined:
-
-``` text
-name
-description
-input schema
-output
-errors
-```
-
-A tool's description and schema are part of its interface and deserve
-the same care as an API contract.
-
-### 10.3 Small, focused tools
-
-Prefer focused operations such as:
-
-``` text
-validate_status_code
-```
-
-over ambiguous mega-tools such as:
-
-``` text
-do_everything_with_this_api_and_figure_it_out
-```
-
-### 10.4 Separate protocol from domain logic
-
-MCP-specific registration and transport code should not contain all
-application behavior.
-
-Business logic belongs in services/modules that can be tested without an
-MCP client.
-
-### 10.5 Tests early
-
-100% coverage is not a requirement.
-
-Useful regression protection is.
-
-Tests should make it difficult to accidentally break existing behavior
-without noticing.
-
-### 10.6 Avoid premature abstraction
-
-Do not build infrastructure for hypothetical future requirements.
-
-Refactor when duplication, complexity, or a real new use case
-demonstrates the need.
-
-### 10.7 Honest technology claims
-
-Never claim the project uses a technology merely because it appears in
-the roadmap.
-
-README topics, résumé descriptions, and project summaries should reflect
-actual implemented functionality.
-
-------------------------------------------------------------------------
-
-## 11. Definition of Done
-
-``` mermaid
-flowchart TD
-    A["Idea"] --> B["Implementation"]
-    B --> C["Works locally"]
-    C --> D["Tests"]
-    D --> E["Documentation"]
-    E --> F["Real MCP client test"]
-    F --> G["Code review"]
-    G --> H["Merge"]
-    H --> I["Done"]
-```
-
-A feature is considered done when:
-
-1.  Its intended behavior is implemented.
-2.  It works locally.
-3.  Appropriate tests exist and pass.
-4.  User/developer-facing behavior is documented where necessary.
-5.  It works through a real MCP client when MCP behavior is involved.
-6.  The implementation has been reviewed for obvious design, security,
-    maintainability, and correctness problems.
-7.  It is merged into the main development line.
-
-------------------------------------------------------------------------
-
-## 12. GitHub Metadata
-
-### Suggested topics at project start
-
-``` text
-mcp
-model-context-protocol
-mcp-server
-typescript
-nodejs
-ai-tools
-developer-tools
-open-source
-```
-
-### Add when QA/API functionality exists
-
-``` text
-software-testing
-qa-automation
-api-testing
-sdet
-```
-
-### Add when Playwright integration actually exists
-
-``` text
-playwright
-test-automation
-```
-
-### License
-
-Intended license: **MIT**.
-
-The license should be added explicitly to the repository before treating
-the project as a published open-source project.
-
-------------------------------------------------------------------------
-
-## 13. Future Ideas
-
-These are possibilities, not commitments.
-
-### API / QA
-
--   Richer HTTP requests.
--   Headers and authentication strategies.
--   JSON-path validation.
--   JSON Schema validation.
--   OpenAPI-aware validation.
--   Response-time assertions.
--   API chaining.
--   Test collections.
--   Reusable environments.
--   Better failure output.
-
-### Playwright
-
--   Execute predefined Playwright tests.
--   Run suites by tag/project.
--   Return structured test results.
--   Capture useful failure artifacts.
--   Inspect failed tests.
--   Controlled browser operations where MCP is actually beneficial.
-
-### Database
-
--   Read-only database queries.
--   PostgreSQL adapter.
--   SQL Server adapter.
--   Source/target comparison.
--   Data-quality validation.
--   API-to-database validation.
--   Query result comparison.
-
-Database tooling must be designed with strong safety boundaries before
-arbitrary query execution is considered.
-
-### Test generation
-
--   Generate candidate test cases from requirements.
--   Generate test data.
--   Suggest edge cases.
--   Translate API contracts into candidate validations.
-
-Generated testing content should remain reviewable; AI-generated tests
-are not automatically considered correct.
-
-### Reporting and failure analysis
-
--   Summarize failed executions.
--   Normalize errors.
--   Compare current and previous results.
--   Produce machine-readable and human-readable reports.
--   Analyze logs/artifacts when available.
-
-### Distribution
-
-Potential future options:
-
--   npm package.
--   `npx` execution.
--   Docker image.
--   Example client configurations.
--   Release automation.
-
-Distribution work should come after the server provides enough value to
-justify easier installation.
-
-------------------------------------------------------------------------
-
-## 14. Security Considerations
-
-Security should be considered as capabilities are added, especially
-because MCP tools can trigger external actions.
-
-Areas requiring explicit design include:
-
--   URL restrictions and SSRF considerations for HTTP tools.
--   Authentication and secret handling.
--   Request and response size limits.
--   Timeouts.
--   Logging without leaking credentials.
--   Database permissions.
--   Read-only versus write operations.
--   File-system access.
--   Browser automation boundaries.
--   Command execution.
--   Tool descriptions that accurately communicate side effects.
--   Validation of all externally supplied inputs.
-
-The first version should avoid broad or dangerous capabilities merely
-for convenience.
-
-------------------------------------------------------------------------
-
-## 15. Learning Workflow
-
-The preferred workflow is collaborative rather than "generate the entire
-project and copy it."
-
-A healthy development loop is:
-
-``` mermaid
-flowchart TD
-    A["Choose one small capability"]
-    B["Understand the MCP concept"]
-    C["Design the tool contract"]
-    D["Implement it"]
-    E["Run it"]
-    F["Break / test it"]
-    G["Review the code"]
-    H["Refactor if justified"]
-    I["Document what matters"]
-    J["Commit"]
-
-    A --> B --> C --> D --> E --> F --> G --> H --> I --> J
-    J --> A
-```
-
-The developer should remain able to explain code that enters the
-repository.
-
-AI assistance can be used for:
-
--   Explaining MCP concepts.
--   Researching documentation.
--   Architecture discussion.
--   Code review.
--   Debugging.
--   Test design.
--   Refactoring suggestions.
--   Comparing implementation alternatives.
--   Documentation.
--   Getting unstuck.
-
-The goal is not to avoid AI-generated code entirely. The goal is to
-avoid having a repository whose owner cannot explain, debug, or extend
-the code.
-
-------------------------------------------------------------------------
-
-## 16. Portfolio Success Criteria
-
-The project becomes strong portfolio evidence when the developer can:
-
--   Clone and set it up from scratch.
--   Explain the architecture without reading a prepared script.
--   Add a new tool independently.
--   Explain the input/output schema.
--   Trace a tool call through the system.
--   Debug a failed tool call.
--   Write or modify tests.
--   Explain why the selected transport is used.
--   Explain why services are separated from MCP registration.
--   Discuss security implications.
--   Describe tradeoffs and rejected approaches.
--   Demonstrate the MCP from a real client.
--   Build a second MCP using the concepts learned from the first.
-
-At that point, a résumé statement such as the following is supportable:
-
-> **Hands-on experience designing and developing MCP servers with
-> TypeScript.**
-
-The repository itself should provide evidence behind that statement.
-
-------------------------------------------------------------------------
-
-## 17. Current Project State
-
-**Current phase:** first working MCP server; v0.1.0 implementation is
-in progress.
-
-### Decisions already made
-
--   Project name: **MCPS 4 All**.
--   Repository: `mcps-4-all`.
--   Tagline: **Learn it. Build it. Break it. Improve it. Share it.**
--   Language: TypeScript.
--   Runtime: Node.js.
--   Initial domain: QA/API.
--   Initial transport: stdio, implemented with the MCP TypeScript SDK's
-    `StdioServerTransport`.
--   Initial testing framework: Vitest.
--   Initial API client approach: native Fetch API.
--   Planned CI/CD: GitHub Actions.
--   Initial tools:
-    -   `health_check` is implemented and successfully discovered and
-        executed through MCP Inspector.
-    -   `api_request`, `validate_status_code`, and
-        `validate_json_property` are planned for v0.1.0 and are not yet
-        implemented.
--   The current implementation builds successfully, its unit tests pass,
-    and ESLint passes.
--   Project should remain simple until real complexity justifies
-    restructuring.
--   The repository should be honest about what is implemented versus
-    planned.
--   Real MCP client execution is part of Definition of Done.
+`package.json` currently declares version `0.1.0`, but the **v0.1 milestone is not complete or stable**.
 
 ### Immediate next milestone
 
-Implement the remaining planned v0.1.0 tools and verify them with tests
-and a real MCP client before expanding the toolset.
+1. Review the current changes, documentation, and GitHub Actions results; create/merge a PR after review.
+2. Implement `validate_status_code` with an explicit expected-vs-actual contract and clear pass/fail output.
+3. Implement `validate_json_property` with a deliberately small, documented JSON property/value contract.
+4. Add appropriate unit, MCP integration, and real-client tests for both tools.
+5. Revisit API security and output limits before expanding allowed destinations or methods.
 
-------------------------------------------------------------------------
+## 9. Roadmap
 
-## 18. Context Maintenance Rule
+| Phase | Focus |
+| --- | --- |
+| v0.1 | MCP fundamentals and initial QA/API tools |
+| v0.2 | Extended API validation and tool contracts |
+| v0.3 | Playwright integration |
+| v0.4 | PostgreSQL/SQL Server data tools |
+| v0.5 | Test generation |
+| v0.6 | Reporting and failure analysis |
+| v1.0 | Stable toolkit and distribution |
 
-This file should evolve with the project.
+These are directions, not delivery promises. Only mention a technology as implemented once the repository actually uses it.
 
-Update `Contexto.MD` when we make decisions that materially change:
+Potential future QA work: headers/auth, richer HTTP methods, JSON path and JSON Schema validation, OpenAPI contracts, response-time assertions, test chaining, and better error reporting. Database tools should start read-only with least-privilege access. Playwright tools should have controlled scope and reviewable artifacts. AI-generated tests require human review.
 
--   Architecture.
--   Stack.
--   Scope.
--   Roadmap.
--   Tool contracts.
--   Repository organization.
--   Security rules.
--   Definition of Done.
--   Learning objectives.
--   Distribution strategy.
--   Major rejected approaches and the reasons they were rejected.
+## 10. Engineering rules
 
-Do not turn this file into a commit log. Git already does that.
+- Prefer small, focused tools with clear descriptions, inputs, outputs, and error semantics.
+- Keep TypeScript strict; use runtime validation when crossing trust boundaries.
+- Keep MCP registration separate from domain services.
+- Prefer deterministic tests; mock external HTTP in automated tests.
+- Test meaningful failures, not only happy paths.
+- Do not weaken valid contracts to accommodate incomplete mocks.
+- Avoid premature monorepo or framework abstractions.
+- Be accurate about what is implemented, planned, tested, and released.
+- Use the official SDK APIs supported by the installed version.
 
-Its purpose is to preserve **why the project looks the way it does and
-where it is intended to go**.
+### Definition of Done
+
+A feature is done when it is implemented, works locally, has appropriate passing tests, is documented, has been verified from a real MCP client when relevant, has undergone design/security review, and has been merged. A passing unit test alone is insufficient.
+
+## 11. Portfolio success criteria
+
+The developer should be able to clone and run the project, explain the protocol and transport, trace a tool call, explain the schemas, debug failures, modify tests, articulate security boundaries, and build another MCP server without a tutorial. The repository should provide verifiable evidence of those skills.
+
+## 12. Repository metadata
+
+Initial GitHub topics: `mcp`, `model-context-protocol`, `mcp-server`, `typescript`, `nodejs`, `ai-tools`, `developer-tools`, `open-source`.
+
+Now that restricted QA/API functionality exists, appropriate additional topics include `software-testing`, `qa-automation`, `api-testing`, and `sdet`. Add `playwright` only after an actual Playwright integration exists.
+
+## 13. Context maintenance rule
+
+Update this file when decisions materially change architecture, stack, scope, roadmap, tool contracts, repository structure, security boundaries, Definition of Done, learning objectives, or distribution strategy. Preserve the reasons behind important choices. Keep `README.md` synchronized with public-facing behavior, but **do not use this file as a changelog**; Git already records individual changes.
